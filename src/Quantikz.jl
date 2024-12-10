@@ -25,7 +25,10 @@ export MultiControl, CNOT, CPHASE, SWAP, H, P, Id, U,
        string2image,
        circuit2image,
        displaycircuit,
-       savecircuit
+       savecircuit,
+       LStick,
+       RStick,
+       Meter
 
 const quantikzname = "tikzlibraryquantikz.code.tex"
 const quantikzfile = joinpath(artifact"quantikz", "quantikz", quantikzname)
@@ -364,6 +367,46 @@ end
 
 NoiseAll() = Noise(ibegin:iend)
 
+struct LStick <: QuantikzOp
+    str::AbstractString
+    target::Integer
+end
+
+affectedqubits(lstick::LStick) = [lstick.target]
+function update_table!(qtable, step, lstick::LStick)
+    table = qtable.table
+    table[lstick.target,step - 1] = "\\lstick{\$$(lstick.str)\$}"
+    table
+end
+
+struct RStick <: QuantikzOp
+    str::AbstractString
+    target::Integer
+end
+
+affectedqubits(rstick::RStick) = [rstick.target]
+function update_table!(qtable, step, rstick::RStick)
+    table = qtable.table
+    table[rstick.target, step + 1]= "\\qw\\rstick{\$$(rstick.str)\$}"
+    print(table)
+    table
+end
+
+struct Meter <: QuantikzOp
+    target::ArrayOrRange
+end
+
+Meter(target::Integer) = Meter([target])
+
+affectedqubits(meter::Meter) = [meter.target...]
+function update_table!(qtable, step, meter::Meter)
+    table = qtable.table
+    for target in meter.target
+        table[target, step + 1]= "\\meter{}"
+    end
+    table
+end
+
 const PADDING = 1
 
 conservative_maximum(a::AbstractVector)=  isempty(a) ? 1 : maximum(a)
@@ -534,5 +577,6 @@ function savetex(circuit,qubits,filename; kw...)
     print(f,string)
     close(f)
 end
+
 
 end
